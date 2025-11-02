@@ -49,3 +49,18 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	group = lsp_on_attach_group,
 	callback = on_attach,
 })
+-- ================================================================================================
+-- AUTO SAVE : Automatically save files on common events
+-- ================================================================================================
+local auto_save_group = vim.api.nvim_create_augroup("AutoSaveGroup", {})
+
+vim.api.nvim_create_autocmd({ "InsertLeave", "TextChanged", "FocusLost", "BufLeave" }, {
+	group = auto_save_group,
+	pattern = "*",
+	callback = function()
+		if vim.bo.modified and vim.bo.buflisted and vim.fn.expand("%") ~= "" then
+			vim.cmd("silent! write")
+		end
+	end,
+	desc = "Auto-save file on text change, buffer switch, or losing focus",
+})
