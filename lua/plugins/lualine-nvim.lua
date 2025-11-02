@@ -1,5 +1,5 @@
 -- ================================================================================================
--- TITLE : lualine.nvim (Soft Gruvbox Dark Inspired)
+-- TITLE : lualine.nvim (Soft Gruvbox Dark with Subtle Mode Highlights + BTC Commas)
 -- ABOUT : Low-distraction dark theme focusing on readability and subtle mode changes.
 -- ================================================================================================
 
@@ -25,7 +25,7 @@ return {
             local result = table.concat(job:result(), "")
             local ok, data = pcall(vim.json.decode, result)
             if ok and data and data.bitcoin and data.bitcoin.usd then
-              btc_price = string.format("$%.2f", data.bitcoin.usd)
+              btc_price = string.format("%.2f", data.bitcoin.usd)
             else
               btc_price = "N/A"
             end
@@ -41,6 +41,19 @@ return {
 
     vim.fn.timer_start(300000, update_btc_price, { ["repeat"] = -1 })
     update_btc_price()
+
+    -- ==========================================================
+    -- 🧮 Helper: Format number with commas
+    -- ==========================================================
+    local function format_with_commas(amount)
+      local formatted = tostring(amount)
+      local k
+      while true do
+        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
+        if k == 0 then break end
+      end
+      return formatted
+    end
 
     -- ==========================================================
     -- 📚 LSP Client Component
@@ -86,46 +99,44 @@ return {
     end
 
     -- ==========================================================
-    -- 🎨 Soft Gruvbox Dark Colors
+    -- 🎨 Soft Gruvbox Dark Colors (subtle mode variations)
     -- ==========================================================
     local colors = {
-      -- Backgrounds
       bg0     = "#1d2021", -- primary dark background
       bg1     = "#3c3836", -- secondary section background
-
-      -- Foreground / Text
       fg_dark = "#ebdbb2", -- main text
       fg_soft = "#bdae93", -- muted text
-      fg_gray = "#928374", -- tertiary / subtle text
-
-      -- Accent Colors
-      red     = "#fb4934", -- replace/error
-      green   = "#b8bb26", -- insert/added
-      yellow  = "#fabd2f", -- visual/BTC
-      blue    = "#83a598", -- LSP
-      magenta = "#d3869b", -- location/highlights
-      orange  = "#fe8019", -- command/warning
+      fg_gray = "#928374", -- tertiary text
+      red     = "#fb4934",
+      green   = "#b8bb26",
+      yellow  = "#fabd2f",
+      blue    = "#83a598",
+      magenta = "#d3869b",
+      orange  = "#fe8019",
+      mode_normal  = "#1d2021",
+      mode_insert  = "#2a2c26",
+      mode_visual  = "#32302f",
+      mode_replace = "#3c3836",
+      mode_command = "#2e2a25",
     }
 
-    -- Define lualine theme
+    -- ==========================================================
+    -- ⚡ Lualine Theme with Subtle Mode Highlights
+    -- ==========================================================
     local my_lualine_theme = {
-      normal = {
-        a = { bg = colors.bg0, fg = colors.blue, gui = "bold" },
-        b = { bg = colors.bg1, fg = colors.fg_soft },
-        c = { bg = colors.bg0, fg = colors.fg_dark },
-        x = { bg = colors.bg1, fg = colors.fg_soft },
-        y = { bg = colors.bg1, fg = colors.fg_soft },
-        z = { bg = colors.bg1, fg = colors.fg_soft },
-      },
-      insert  = { a = { bg = colors.bg0, fg = colors.green, gui = "bold" } },
-      visual  = { a = { bg = colors.bg0, fg = colors.yellow, gui = "bold" } },
-      replace = { a = { bg = colors.bg0, fg = colors.red, gui = "bold" } },
-      command = { a = { bg = colors.bg0, fg = colors.orange, gui = "bold" } },
-      inactive = {
-        a = { bg = colors.bg0, fg = colors.fg_gray },
-        b = { bg = colors.bg0, fg = colors.fg_gray },
-        c = { bg = colors.bg0, fg = colors.fg_gray },
-      },
+      normal = { a = { bg = colors.mode_normal, fg = colors.blue, gui = "bold" },
+                 b = { bg = colors.bg1, fg = colors.fg_soft },
+                 c = { bg = colors.bg0, fg = colors.fg_dark },
+                 x = { bg = colors.bg1, fg = colors.fg_soft },
+                 y = { bg = colors.bg1, fg = colors.fg_soft },
+                 z = { bg = colors.bg1, fg = colors.fg_soft } },
+      insert  = { a = { bg = colors.mode_insert, fg = colors.green, gui = "bold" } },
+      visual  = { a = { bg = colors.mode_visual, fg = colors.yellow, gui = "bold" } },
+      replace = { a = { bg = colors.mode_replace, fg = colors.red, gui = "bold" } },
+      command = { a = { bg = colors.mode_command, fg = colors.orange, gui = "bold" } },
+      inactive= { a = { bg = colors.bg0, fg = colors.fg_gray },
+                  b = { bg = colors.bg0, fg = colors.fg_gray },
+                  c = { bg = colors.bg0, fg = colors.fg_gray } },
     }
 
     -- ==========================================================
@@ -153,16 +164,18 @@ return {
           { lsp_client, color = { fg = colors.blue, gui = "bold" } },
         },
         lualine_x = {
-          {
-            "diagnostics",
-            sources = { "nvim_diagnostic" },
-            symbols = { error = " ", warn = " ", info = " ", hint = " " },
-          },
+          { "diagnostics", sources = { "nvim_diagnostic" },
+            symbols = { error = " ", warn = " ", info = " ", hint = " " } },
           { word_count, color = { fg = colors.fg_soft } },
-          {
-            function() return "₿ " .. btc_price end,
-            color = { fg = colors.yellow, gui = "bold" },
-          },
+          { function()
+              local num = tonumber(btc_price or 0)
+              if num > 0 then
+                return "₿ $" .. format_with_commas(string.format("%.2f", num))
+              else
+                return "₿ " .. btc_price
+              end
+            end,
+            color = { fg = colors.yellow, gui = "bold" } },
         },
         lualine_y = { { "progress" } },
         lualine_z = { { datetime, color = { fg = colors.fg_soft } }, { "location", icon = "" } },
