@@ -1,13 +1,46 @@
--- ================================================================================================
--- TITLE : lualine.nvim (Soft Gruvbox Dark with Subtle Mode Highlights + BTC Commas)
--- ABOUT : Low-distraction dark theme focusing on readability and subtle mode changes.
--- ================================================================================================
-
 return {
   "nvim-lualine/lualine.nvim",
   dependencies = { "nvim-tree/nvim-web-devicons", "nvim-lua/plenary.nvim" },
   config = function()
     local Job = require("plenary.job")
+
+    -- ==========================================================
+    -- 📰 Latest Crypto News (via NewsData.io — BTC only, 100 chars)
+    -- ==========================================================
+    local crypto_news = "Loading…"
+    local function update_crypto_news()
+      Job:new({
+        command = "curl",
+        args = {
+          "-s",
+          "https://newsdata.io/api/1/crypto?apikey=pub_bb5ecbbdee774b81bf63180b5925fc5b&coin=btc&language=en&size=1"
+        },
+        on_exit = function(job, return_val)
+          if return_val == 0 then
+            local result = table.concat(job:result(), "")
+            local ok, data = pcall(vim.json.decode, result)
+            if ok and data and data.results and #data.results > 0 and data.results[1].title then
+              local title = data.results[1].title
+              crypto_news = #title > 100 and title:sub(1, 97) .. "..." or title
+            else
+              crypto_news = "News: N/A"
+            end
+          else
+            crypto_news = "News: Err"
+          end
+          vim.schedule(function()
+            vim.cmd("redrawstatus")
+          end)
+        end,
+      }):start()
+    end
+
+    vim.fn.timer_start(1800000, update_crypto_news, { ["repeat"] = -1 })
+    update_crypto_news()
+
+    local function crypto_news_component()
+      return "📰 " .. crypto_news
+    end
 
     -- ==========================================================
     -- 💰 Live Bitcoin (BTC) Price (via CoinGecko)
@@ -25,7 +58,7 @@ return {
             local result = table.concat(job:result(), "")
             local ok, data = pcall(vim.json.decode, result)
             if ok and data and data.bitcoin and data.bitcoin.usd then
-              btc_price = string.format("%.2f", data.bitcoin.usd)
+              btc_price = data.bitcoin.usd
             else
               btc_price = "N/A"
             end
@@ -39,7 +72,7 @@ return {
       }):start()
     end
 
-    vim.fn.timer_start(300000, update_btc_price, { ["repeat"] = -1 })
+    vim.fn.timer_start(270000, update_btc_price, { ["repeat"] = -1 })
     update_btc_price()
 
     -- ==========================================================
@@ -53,6 +86,18 @@ return {
         if k == 0 then break end
       end
       return formatted
+    end
+
+    -- ==========================================================
+    -- 💵 BTC Price Component
+    -- ==========================================================
+    local function btc_price_component()
+      local num = tonumber(btc_price or 0)
+      if num and num > 0 then
+        return "₿ $" .. format_with_commas(string.format("%.2f", num))
+      else
+        return "₿ " .. btc_price
+      end
     end
 
     -- ==========================================================
@@ -82,7 +127,6 @@ return {
         pandoc = true,
         wiki = true,
       }
-
       if count_filetypes[ft] then
         local words = vim.fn.wordcount().words
         return "W: " .. words
@@ -99,14 +143,14 @@ return {
     end
 
     -- ==========================================================
-    -- 🎨 Soft Gruvbox Dark Colors (subtle mode variations)
+    -- 🎨 Soft Gruvbox Dark Colors
     -- ==========================================================
     local colors = {
-      bg0     = "#1d2021", -- primary dark background
-      bg1     = "#3c3836", -- secondary section background
-      fg_dark = "#ebdbb2", -- main text
-      fg_soft = "#bdae93", -- muted text
-      fg_gray = "#928374", -- tertiary text
+      bg0     = "#1d2021",
+      bg1     = "#3c3836",
+      fg_dark = "#ebdbb2",
+      fg_soft = "#bdae93",
+      fg_gray = "#928374",
       red     = "#fb4934",
       green   = "#b8bb26",
       yellow  = "#fabd2f",
@@ -121,7 +165,7 @@ return {
     }
 
     -- ==========================================================
-    -- ⚡ Lualine Theme with Subtle Mode Highlights
+    -- ⚡ Lualine Theme
     -- ==========================================================
     local my_lualine_theme = {
       normal = { a = { bg = colors.mode_normal, fg = colors.blue, gui = "bold" },
@@ -140,7 +184,7 @@ return {
     }
 
     -- ==========================================================
-    -- ⚙️ Lualine Setup
+    -- ⚙️ Lualine Setup (Updated Layout)
     -- ==========================================================
     require("lualine").setup({
       options = {
@@ -160,25 +204,25 @@ return {
           { "diff", symbols = { added = " ", modified = "", removed = " " } },
         },
         lualine_c = {
-          { "filename", path = 1, symbols = { modified = "", readonly = "", unnamed = "" }, color = { fg = colors.fg_dark } },
+          -- Only filename, no path
+          { "filename", 
+            path = 0,  -- 0 = filename only
+            symbols = { modified = "", readonly = "", unnamed = "" }, 
+            color = { fg = colors.fg_dark } 
+          },
           { lsp_client, color = { fg = colors.blue, gui = "bold" } },
         },
         lualine_x = {
           { "diagnostics", sources = { "nvim_diagnostic" },
             symbols = { error = " ", warn = " ", info = " ", hint = " " } },
           { word_count, color = { fg = colors.fg_soft } },
-          { function()
-              local num = tonumber(btc_price or 0)
-              if num > 0 then
-                return "₿ $" .. format_with_commas(string.format("%.2f", num))
-              else
-                return "₿ " .. btc_price
-              end
-            end,
-            color = { fg = colors.yellow, gui = "bold" } },
+          { crypto_news_component, color = { fg = colors.magenta, gui = "italic" } },
         },
         lualine_y = { { "progress" } },
-        lualine_z = { { datetime, color = { fg = colors.fg_soft } }, { "location", icon = "" } },
+        lualine_z = { 
+          { datetime, color = { fg = colors.fg_soft } },
+          { btc_price_component, color = { fg = colors.yellow, gui = "bold" } }, -- BTC last
+        },
       },
       extensions = { "fugitive", "nvim-tree", "toggleterm", "quickfix" },
     })
