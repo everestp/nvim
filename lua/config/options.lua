@@ -102,3 +102,19 @@ vim.opt.foldlevel = 99 -- Keep all folds open by default
 -- Split Behavior
 vim.opt.splitbelow = true -- Horizontal splits open below
 vim.opt.splitright = true -- Vertical splits open to the right
+
+-- Disable mouse by default
+vim.opt.mouse = ""
+
+-- Enable mouse only in visual mode
+vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+  pattern = "*",
+  callback = function()
+    local mode = vim.fn.mode()
+    if mode == "v" or mode == "V" or mode == "\22" then
+      vim.opt.mouse = "a"  -- Enable mouse in visual modes
+    else
+      vim.opt.mouse = ""   -- Disable mouse in normal/insert/etc.
+    end
+  end,
+})
