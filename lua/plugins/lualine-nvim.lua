@@ -13,7 +13,7 @@ return {
         command = "curl",
         args = {
           "-s",
-          "https://newsdata.io/api/1/crypto?apikey=pub_bb5ecbbdee774b81bf63180b5925fc5b&coin=btc&language=en&size=1"
+          "https://newsdata.io/api/1/crypto?apikey=pub_bb5ecbbdee774b81bf63180b5925fc5b&language=en"
         },
         on_exit = function(job, return_val)
           if return_val == 0 then
@@ -72,7 +72,7 @@ return {
       }):start()
     end
 
-    vim.fn.timer_start(270000, update_btc_price, { ["repeat"] = -1 })
+    vim.fn.timer_start(170000, update_btc_price, { ["repeat"] = -1 })
     update_btc_price()
 
     -- ==========================================================
@@ -136,10 +136,10 @@ return {
     end
 
     -- ==========================================================
-    -- 🕓 Date & Time Component
+    -- 🕓 Date & Time Component (Full Year)
     -- ==========================================================
     local function datetime()
-      return os.date(" %b %d  %H:%M")
+      return os.date(" %b %d, %Y  %H:%M")
     end
 
     -- ==========================================================
@@ -204,24 +204,18 @@ return {
           { "diff", symbols = { added = " ", modified = "", removed = " " } },
         },
         lualine_c = {
-          -- Only filename, no path
-          { "filename", 
-            path = 0,  -- 0 = filename only
-            symbols = { modified = "", readonly = "", unnamed = "" }, 
-            color = { fg = colors.fg_dark } 
-          },
+          { "filename", path = 0, symbols = { modified = "", readonly = "", unnamed = "" }, color = { fg = colors.fg_dark } },
           { lsp_client, color = { fg = colors.blue, gui = "bold" } },
         },
         lualine_x = {
-          { "diagnostics", sources = { "nvim_diagnostic" },
-            symbols = { error = " ", warn = " ", info = " ", hint = " " } },
+          { "diagnostics", sources = { "nvim_diagnostic" }, symbols = { error = " ", warn = " ", info = " ", hint = " " } },
           { word_count, color = { fg = colors.fg_soft } },
           { crypto_news_component, color = { fg = colors.magenta, gui = "italic" } },
         },
         lualine_y = { { "progress" } },
-        lualine_z = { 
+        lualine_z = {
           { datetime, color = { fg = colors.fg_soft } },
-          { btc_price_component, color = { fg = colors.yellow, gui = "bold" } }, -- BTC last
+          { btc_price_component, color = { fg = colors.yellow, gui = "bold" } },
         },
       },
       extensions = { "fugitive", "nvim-tree", "toggleterm", "quickfix" },
