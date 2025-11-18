@@ -210,12 +210,12 @@ return {
         lualine_x = {
           { "diagnostics", sources = { "nvim_diagnostic" }, symbols = { error = " ", warn = " ", info = " ", hint = " " } },
           { word_count, color = { fg = colors.fg_soft } },
-          { crypto_news_component, color = { fg = colors.magenta, gui = "italic" } },
+          -- { crypto_news_component, color = { fg = colors.magenta, gui = "italic" } },
         },
         lualine_y = { { "progress" } },
         lualine_z = {
           { datetime, color = { fg = colors.fg_soft } },
-          { btc_price_component, color = { fg = colors.yellow, gui = "bold" } },
+          -- { btc_price_component, color = { fg = colors.yellow, gui = "bold" } },
         },
       },
       extensions = { "fugitive", "nvim-tree", "toggleterm", "quickfix" },
